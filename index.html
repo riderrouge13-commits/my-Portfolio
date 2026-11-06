@@ -183,7 +183,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sf-box{width:100%;height:min(46svh,520px);display:grid;place-items:center}
 #sf{position:relative;overflow:hidden;width:min(100%,640px);aspect-ratio:16/9;background:var(--surface);border-radius:var(--r)}
 .sf-layer{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
-.sf-layer:not(:first-child){opacity:0}
+.sf-layer:not(.sf-first){opacity:0}
+picture{display:contents}
 .sls{display:grid;gap:2.4rem}
 .sl{min-width:0}
 .sl h2{margin:0;font:400 clamp(2.4rem,min(5.6vw,10svh),5.2rem)/1 var(--font-display);letter-spacing:-.015em}
@@ -356,12 +357,12 @@ d.classList.add('story-anim');if(!matchMedia('(prefers-reduced-motion: reduce)')
       </div>
       <div class="sf-box">
         <div id="sf">
-          <img class="sf-layer" data-r="0.8" src="work/me.jpg" alt="" width="1100" height="1650">
-          <img class="sf-layer" data-r="0.6664" src="work/grad.jpg" alt="" width="853" height="1280" loading="lazy" style="object-position:50% 20%">
-          <video class="sf-layer" data-r="0.5625" src="work/story-talk.mp4" poster="work/talk-01.jpg" muted loop playsinline preload="auto"></video>
-          <img class="sf-layer" data-r="1.2" src="work/studio-grid.jpg" alt="" width="1440" height="1200" loading="lazy">
-          <img class="sf-layer" data-r="1.7778" src="work/vp-guide-05.jpg" alt="" width="1834" height="1032" loading="lazy">
-          <video class="sf-layer" data-r="1.7778" id="sfv" src="work/story-razkals.mp4" poster="work/razkals-03.jpg" muted loop playsinline preload="auto"></video>
+          <picture><source type="image/avif" srcset="work/me.avif"><img class="sf-layer sf-first" data-r="0.8" src="work/me.jpg" alt="" width="1100" height="1650" loading="lazy" decoding="async"></picture>
+          <picture><source type="image/avif" srcset="work/grad.avif"><img class="sf-layer" data-r="0.6664" src="work/grad.jpg" alt="" width="853" height="1280" loading="lazy" decoding="async" style="object-position:50% 20%"></picture>
+          <video class="sf-layer" data-r="0.5625" src="work/story-talk.mp4" data-poster="work/talk-01.jpg" muted loop playsinline preload="none"></video>
+          <picture><source type="image/avif" srcset="work/studio-grid.avif"><img class="sf-layer" data-r="1.2" src="work/studio-grid.jpg" alt="" width="1440" height="1200" loading="lazy" decoding="async"></picture>
+          <picture><source type="image/avif" srcset="work/vp-guide-05.avif"><img class="sf-layer" data-r="1.7778" src="work/vp-guide-05.jpg" alt="" width="1834" height="1032" loading="lazy" decoding="async"></picture>
+          <video class="sf-layer" data-r="1.7778" id="sfv" src="work/story-razkals.mp4" data-poster="work/razkals-03.jpg" muted loop playsinline preload="none"></video>
         </div>
       </div>
       <div class="st-txt">
@@ -496,6 +497,16 @@ var SECTIONS=[
   ]}
 ];
 var isVideo=function(s){return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(s)};
+/* AVIF copies exist only where they are smaller AND visually identical to the original (SSIM >= 0.985); everything else stays JPEG */
+var FMT={"cleva-01":1,"cleva-03":1,"cleva-04":1,"cleva-06":1,"cleva-07":1,"cleva-08":1,"cleva-09":1,"cleva-10":1,"cleva-11":1,"cleva-14":1,"cleva-19":1,"cleva-20":1,"grad":1,"me":1,"mm-01":1,"mm-02":1,"mm-03":1,"mm-04":1,"mm-05":1,"mm-06":1,"mo-01":1,"mo-02":1,"razkals-01":1,"razkals-02":1,"razkals-03":1,"studio-grid":1,"talk-01":1,"vp-chat-order":1,"vp-guide-01":1,"vp-guide-02":1,"vp-guide-03":1,"vp-guide-04":1,"vp-guide-05":1,"vp-guide-06":1,"vp-guide-07":1,"vp-guide-08":1,"vp-guide-09":1,"vp-guide-10":1,"vp-guide-11":1,"vp-illustration":1,"vp-mark-glass":1,"vp-mark":1,"vp-on-the-list":1,"vp-payment-held":1,"vp-trust":1,"vp-waitlist":1};
+var AVIF_OK=false,AVIF=new Promise(function(res){var i=new Image();i.onload=function(){res(AVIF_OK=i.width>0)};i.onerror=function(){res(AVIF_OK=false)};
+  i.src='data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAACJpbG9jAAAAAERAAAEAAQAAAAAA+gABAAAAAAAAACQAAAAjaWluZgAAAAAAAQAAABVpbmZlAgAAAAABAABhdjAxAAAAAA5waXRtAAAAAAABAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAsbWRhdBIACgc4AAaQENBpMhcZQmMEwAA0AACQQMkcYUuNGtYQVLH7IA=='});
+function bestImg(file){var k=file.replace(/^work\//,'').replace(/\.jpg$/,'');return (AVIF_OK&&FMT[k])?file.replace(/\.jpg$/,'.avif'):file}
+function pic(file,alt,w,h,lazy){var pc=document.createElement('picture'),k=file.replace(/^work\//,'').replace(/\.jpg$/,'');
+  if(FMT[k]){var so=document.createElement('source');so.type='image/avif';so.srcset=file.replace(/\.jpg$/,'.avif');pc.appendChild(so)}
+  var im=document.createElement('img');im.src=file;im.alt=alt;if(w){im.width=w;im.height=h}if(lazy)im.loading='lazy';im.decoding='async';pc.appendChild(im);return pc}
+/* video covers and video data load only when a video is about to be seen */
+var nearIO='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;var v=e.target;nearIO.unobserve(v);AVIF.then(function(){if(v.dataset.poster)v.poster=bestImg(v.dataset.poster)})})},{rootMargin:'900px 0px'}):null;
 
 /* ============ STAND-IN ART (no text) ============ */
 function rng(seed){var s=(seed*2654435761)>>>0;return function(){s=(s+0x6D2B79F5)>>>0;var t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
@@ -535,8 +546,8 @@ function tileEl(p,act,client){
   el.style.setProperty('--a',(p.w/p.h).toFixed(4));
   var fr=document.createElement('div');fr.className='frame';fr.style.setProperty('--ar',p.w+'/'+p.h);
   var vid=null;
-  if(p.src&&isVideo(p.src)){vid=document.createElement('video');vid.muted=true;vid.loop=true;vid.playsInline=true;vid.preload='metadata';if(p.poster)vid.poster=p.poster;vid.src=p.src;fr.appendChild(vid)}
-  else if(p.src){var img=document.createElement('img');img.src=p.src;img.alt=(client?client+' ':'')+p.title;img.loading='lazy';img.decoding='async';img.width=p.w;img.height=p.h;fr.appendChild(img)}
+  if(p.src&&isVideo(p.src)){vid=document.createElement('video');vid.muted=true;vid.loop=true;vid.playsInline=true;vid.preload='none';if(p.poster){vid.dataset.poster=p.poster;if(nearIO)nearIO.observe(vid);else vid.poster=p.poster}vid.src=p.src;fr.appendChild(vid)}
+  else if(p.src){fr.appendChild(pic(p.src,(client?client+' ':'')+p.title,p.w,p.h,true))}
   else{var cv=document.createElement('canvas');cv.setAttribute('aria-hidden','true');fr.appendChild(cv);var rn=p.w/p.h,w=rn>=1?640:420;drawQueue.push(function(){drawArt(cv,w,Math.round(w/rn),p.seed)})}
   var tt=document.createElement('div');tt.className='tt';tt.textContent=p.title;fr.appendChild(tt);
   el.appendChild(fr);el._vid=vid;el._p=p;el._client=client||'';
@@ -592,8 +603,8 @@ function renderLB(){
   var t=tiles[lbIdx],p=t._p,r=p.w/p.h,f=fitBox(r);
   stage.innerHTML='';stage.style.width=f.w+'px';stage.style.height=f.h+'px';
   var el;
-  if(p.src&&isVideo(p.src)){el=document.createElement('video');if(p.poster)el.poster=p.poster;el.src=p.src;el.controls=true;el.autoplay=true;el.loop=true;el.muted=true;el.playsInline=true}
-  else if(p.src){el=document.createElement('img');el.src=p.src;el.alt=(t._client?t._client+' ':'')+p.title}
+  if(p.src&&isVideo(p.src)){el=document.createElement('video');if(p.poster)el.poster=bestImg(p.poster);el.src=p.src;el.controls=true;el.autoplay=true;el.loop=true;el.muted=true;el.playsInline=true}
+  else if(p.src){el=pic(p.src,(t._client?t._client+' ':'')+p.title)}
   else{el=document.createElement('canvas');var w=r>=1?1400:Math.round(1400*r);drawArt(el,w,Math.round(w/r),p.seed)}
   stage.appendChild(el);
   $('#lb-title').textContent=t._client||p.title;
@@ -665,7 +676,7 @@ function initGL(){
   var loader=new THREE.TextureLoader(),rr=rng(77),h0=NARROW?1.7:2.5,pts=[];
   HERO_FRAMES.forEach(function(F,i){
     var ratio=F[1]/F[2],w=h0*ratio,tex;
-    if(F[0]){tex=loader.load('work/'+F[0])}
+    if(F[0]){tex=new THREE.Texture();(function(t,f){AVIF.then(function(){var im=new Image();im.decoding='async';im.onload=function(){t.image=im;t.needsUpdate=true};im.src=bestImg('work/'+f)})})(tex,F[0])}
     else{var c=document.createElement('canvas');var cw=ratio>=1?512:340;drawArt(c,cw,Math.round(cw/ratio),i*5+101,[0,2,4][i%3]);tex=new THREE.CanvasTexture(c)}
     if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
     var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h0),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
@@ -742,6 +753,9 @@ function syncStoryVideos(){sfvs.forEach(function(v){var on=storyIn&&(!STORY||sfL
   if(on){v.muted=true;if(v.paused){var p=v.play();if(p&&p.catch)p.catch(function(){})}}else if(!v.paused)v.pause()})}
 window.__storyCh=function(i){storyCh=i;syncStoryVideos()};
 if('IntersectionObserver' in window){new IntersectionObserver(function(es){es.forEach(function(e){storyIn=e.isIntersecting;syncStoryVideos()})}).observe($('#about'))}
+/* the story's videos and covers start loading once the story section is within about half a screen */
+(function(){var warm=false;function go(){if(warm)return;warm=true;AVIF.then(function(){sfvs.forEach(function(v){if(v.dataset.poster)v.poster=bestImg(v.dataset.poster);v.preload='auto'});syncStoryVideos()})}
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){if(es.some(function(e){return e.isIntersecting})){io.disconnect();go()}},{rootMargin:'60% 0px'});io.observe($('#about'))}else go()})();
 sfvs.forEach(function(v){v.addEventListener('pause',function(){if(storyIn&&STORY&&sfLayers.indexOf(v)===storyCh&&!document.hidden)setTimeout(syncStoryVideos,250)})});
 function fit(r){var b=$('.sf-box').getBoundingClientRect();var w=Math.min(b.width,900),h=w/r;if(h>b.height){h=b.height;w=h*r}return{w:w*.94,h:h*.94}}
 (function(){var r=parseFloat($$('.sf-layer')[0].dataset.r);sf.style.aspectRatio=String(r)})();
