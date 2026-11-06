@@ -298,7 +298,7 @@ picture{display:contents}
 </head>
 <body>
 <script>
-(function(){try{if('scrollRestoration' in history)history.scrollRestoration='manual';if(location.hash)history.replaceState(null,'',location.pathname+location.search)}catch(e){}window.scrollTo(0,0);window.__ui=0;['wheel','touchstart','keydown','pointerdown'].forEach(function(n){addEventListener(n,function(){window.__ui=1},{passive:true,capture:true})});
+(function(){try{if('scrollRestoration' in history)history.scrollRestoration='manual';if(location.hash)history.replaceState(null,'',location.pathname+location.search)}catch(e){}window.scrollTo(0,0);window.__ui=0;['wheel','touchstart','keydown','pointerdown'].forEach(function(n){addEventListener(n,function(){window.__ui=1},{passive:true,capture:true})});var top0=function(){if(window.__ui||!window.scrollY)return;var de=document.documentElement,sb=de.style.scrollBehavior;de.style.scrollBehavior='auto';try{window.scrollTo({top:0,left:0,behavior:'instant'})}catch(e){window.scrollTo(0,0)}de.style.scrollBehavior=sb};window.__top0=top0,topDone=0;addEventListener('scroll',function(){if(!topDone)top0()},{passive:true});addEventListener('pageshow',top0);(function g(){if(topDone||window.__ui)return;top0();requestAnimationFrame(g)})();addEventListener('load',function(){top0();setTimeout(function(){top0();topDone=1},6000)});
 var d=document.documentElement;try{var t=localStorage.getItem('tmg-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}
 d.classList.add('story-anim');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('anim');})();
 </script>
@@ -870,7 +870,7 @@ function initScroll(){
 }
 (function(){var w=['Motion Design','Graphic Design','Video Edits','Motion Design','Graphic Design','Video Edits'],h='';
   w.forEach(function(x,i){h+='<span'+(i%2?' class="o"':'')+'>'+x+'</span><i></i>'});$('#marq').innerHTML=h})();
-function start(){if(!window.__ui&&window.scrollY){var de=document.documentElement,sb=de.style.scrollBehavior;de.style.scrollBehavior='auto';window.scrollTo(0,0);de.style.scrollBehavior=sb}drawQueue.forEach(function(f){f()});initScroll();if(HAS_GSAP)ScrollTrigger.refresh()}
+function start(){if(window.__top0)window.__top0();drawQueue.forEach(function(f){f()});initScroll();if(HAS_GSAP)ScrollTrigger.refresh()}
 var started=false;function go(){if(started)return;started=true;start()}
 var fontWait=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
 Promise.race([fontWait,new Promise(function(r){setTimeout(r,1400)})]).then(go);
