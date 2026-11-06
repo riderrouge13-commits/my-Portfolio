@@ -61,7 +61,7 @@ body::after{content:"";position:fixed;inset:-50%;width:200%;height:200%;pointer-
 @keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}40%{transform:translate(3%,-5%)}60%{transform:translate(-6%,-2%)}80%{transform:translate(5%,4%)}100%{transform:translate(0,0)}}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:121;background:var(--bg)}
 
-#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+#gl{position:fixed;top:0;left:0;width:100%;height:100vh;height:100lvh;z-index:0;display:block}
 
 /* cursor */
 #cur-dot,#cur-ring{position:fixed;left:0;top:0;transform:translate3d(-200px,-200px,0);pointer-events:none;z-index:200;border-radius:50%;display:none;will-change:transform}
@@ -165,6 +165,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .helm{--D:min(62vw,44svh);top:45%}
   .hero-stick::before{background:linear-gradient(to top,var(--bg) 26%,color-mix(in srgb,var(--bg) 50%,transparent) 42%,transparent 60%)}
   .name{font-size:clamp(3rem,15vw,6rem)}
+  .brand,.links,.theme,.menu-btn,.helm-l{-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--bg) 94%,transparent)}
+}
+@media(max-width:820px) and (min-height:561px){
+  .hero-stick{align-items:start}
+  .helm{--D:min(72vw,46svh);top:61%}
+  .hero-stick::before{background:linear-gradient(to bottom,var(--bg) 0,var(--bg) 22%,color-mix(in srgb,var(--bg) 55%,transparent) 34%,transparent 48%)}
 }
 
 /* story */
@@ -417,7 +423,7 @@ if(!HAS_GSAP||RM)root.classList.remove('anim');
 if(!HAS_GSAP)root.classList.remove('story-anim');
 var ANIM=root.classList.contains('anim');
 var STORY=root.classList.contains('story-anim');
-if(HAS_GSAP)gsap.registerPlugin(ScrollTrigger);
+if(HAS_GSAP){gsap.registerPlugin(ScrollTrigger);ScrollTrigger.config({ignoreMobileResize:true})}
 var clamp=function(v,a,b){a=a==null?0:a;b=b==null?1:b;return Math.min(b,Math.max(a,v))};
 var $=function(s,c){return (c||document).querySelector(s)};
 var $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
@@ -656,7 +662,12 @@ if(FINE){
 }
 
 /* ============ THREE.JS HERO: real work flying past ============ */
-var gl=$('#gl'),hero=$('#hero'),state={p:0,sp:0},mx=0,my=0,smx=0,smy=0;
+var gl=$('#gl'),hero=$('#hero'),stickEl=$('.hero-stick'),state={p:0,sp:0},mx=0,my=0,smx=0,smy=0;
+/* hero sizes are measured on resize, not read every frame; on touch screens a height-only resize is the
+   browser's address bar moving, so it is ignored (the canvas is 100lvh and never needs to change) */
+var VIEW={heroH:0,stickH:0},GLK=1;
+function measureHero(){VIEW.heroH=hero.offsetHeight;VIEW.stickH=stickEl.offsetHeight||innerHeight;GLK=(innerWidth<=820&&innerHeight>560)?.55:1}
+measureHero();
 var renderer=null,scene,cam,planes=[],lineMat,ptMat,SPACING=2.2;
 var HERO_FRAMES=[
   ['vp-guide-01.jpg',1834,1032],['vp-chat-order.jpg',4,5],['razkals-01.jpg',4,5],['vp-mark.jpg',1,1],['vp-guide-04.jpg',1834,1032],
@@ -664,7 +675,7 @@ var HERO_FRAMES=[
   ['razkals-02.jpg',4,5],['vp-payment-held.jpg',4,5],['vp-guide-06.jpg',1834,1032],['vp-on-the-list.jpg',4,5],['cleva-12.jpg',4,5],
   ['vp-guide-10.jpg',1834,1032],['vp-illustration.jpg',1080,602],['cleva-05.jpg',4,5],['mm-02.jpg',9,16],['cleva-20.jpg',4,5]
 ];
-var N=HERO_FRAMES.length;
+var N=HERO_FRAMES.length,FADE=[1.2,2.2];
 function tok(n){return getComputedStyle(root).getPropertyValue(n).trim()}
 function initGL(){
   if(!window.THREE){gl.style.display='none';return}
@@ -679,17 +690,17 @@ function initGL(){
     if(F[0]){tex=new THREE.Texture();(function(t,f){AVIF.then(function(){var im=new Image();im.decoding='async';im.onload=function(){t.image=im;t.needsUpdate=true};im.src=bestImg('work/'+f)})})(tex,F[0])}
     else{var c=document.createElement('canvas');var cw=ratio>=1?512:340;drawArt(c,cw,Math.round(cw/ratio),i*5+101,[0,2,4][i%3]);tex=new THREE.CanvasTexture(c)}
     if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
-    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h0),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h0),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,depthWrite:false}));m.renderOrder=-i;
     var a=i*2.4,rad=5.6+(i%3)*1.1;
     m.position.set(XO+Math.cos(a)*rad*XF,Math.sin(a)*rad*.62+(NARROW?1.2:0),-2-i*SPACING);
     m.rotation.set(m.position.y*.05,-m.position.x*.08,(rr()-.5)*.2);
     m.userData.y=m.position.y;m.userData.o=i;scene.add(m);planes.push(m);
   });
+  FADE=NARROW?[2.6,3.4]:[1.2,2.2];
   window.__glTheme=function(){try{scene.fog.color.set(tok('--bg')||'#FBFAFF')}catch(e){}};
   window.__glTheme();resizeGL();
 }
-function resizeGL(){if(!renderer)return;renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
-addEventListener('resize',resizeGL);
+function resizeGL(){if(!renderer)return;var w=gl.clientWidth||innerWidth,h=gl.clientHeight||innerHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
 addEventListener('pointermove',function(e){mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2});
 /* ============ SHIP'S HELM ============ */
 var helm=$('#helm'),wheelG=$('#wheel-g'),spokesG=$('#spokes'),helmL=$$('.helm-l'),SLOT=[240,180,120];
@@ -699,17 +710,21 @@ var HW={off:0,intro:RM?0:-220,hot:-1},knobs=[];
     '<path class="w-knob" d="M58 -3.2 L66 -3.2 L68 -5 Q72 -6.6 76 -4.6 L82 -3.6 Q90 -5.8 95.5 -2.2 Q97.5 0 95.5 2.2 Q90 5.8 82 3.6 L76 4.6 Q72 6.6 68 5 L66 3.2 L58 3.2 Z"/></g>'}
   spokesG.innerHTML=h;knobs=$$('.w-knob',spokesG);})();
 function placeHelm(){root.style.setProperty('--cw',document.documentElement.clientWidth+'px');var D=helm.offsetWidth,rr=D*.49+14;helmL.forEach(function(l,i){var a=SLOT[i]*Math.PI/180;l.style.left=(D/2+Math.cos(a)*rr).toFixed(1)+'px';l.style.top=(D/2+Math.sin(a)*rr).toFixed(1)+'px'})}
-placeHelm();addEventListener('resize',placeHelm);
-function turnTo(deg,dur){if(!HAS_GSAP||RM){HW.off=deg;return}gsap.to(HW,{off:deg,duration:dur||1.2,ease:'elastic.out(1,0.6)',overwrite:true})}
+placeHelm();
+var COARSE=matchMedia('(pointer:coarse)').matches,lastW=document.documentElement.clientWidth;
+addEventListener('resize',function(){var w=document.documentElement.clientWidth;if(COARSE&&w===lastW)return;lastW=w;placeHelm();resizeGL();measureHero()});
+if(HAS_GSAP)ScrollTrigger.addEventListener('refresh',measureHero);
+function turnTo(deg,dur){if(!HAS_GSAP||RM){HW.off=deg;return}gsap.to(HW,{off:deg,duration:dur||.9,ease:'back.out(1.3)',overwrite:true})}
+var lastMove=0;addEventListener('pointermove',function(){lastMove=performance.now()},{passive:true});
 helmL.forEach(function(l,i){
   function on(){HW.hot=i;helmL.forEach(function(x,j){x.classList.toggle('on',j===i)});var step=i===0?-60:i===2?60:0;turnTo(Math.round(HW.off/60)*60+step+(step?0:8))}
   function off(){HW.hot=-1;l.classList.remove('on');turnTo(Math.round(HW.off/60)*60)}
-  l.addEventListener('pointerenter',function(e){if(e.pointerType!=='touch')on()});
+  l.addEventListener('pointerenter',function(e){if(e.pointerType!=='touch'&&performance.now()-lastMove<150)on()});
   l.addEventListener('pointerleave',off);l.addEventListener('focus',on);l.addEventListener('blur',off);
 });
 var helmHS=null,helmT=0;
 function drawHelm(t){
-  var vh=innerHeight,range=hero.offsetHeight-vh,hp=range>0?clamp(scrollY/range):0;
+  var range=VIEW.heroH-VIEW.stickH,hp=range>0?clamp(scrollY/range):0;
   var dt=helmT?Math.min(100,Math.max(0,t-helmT)):16;helmT=t;
   if(helmHS===null||RM)helmHS=hp;else helmHS+=(hp-helmHS)*(1-Math.exp(-dt/190));
   var rot=HW.intro+HW.off+(RM?0:helmHS*360+Math.sin(t*.0007)*1.6);
@@ -721,11 +736,11 @@ function drawHelm(t){
 function loop(t){
   requestAnimationFrame(loop);
   if(FINE){rx+=(cx-rx)*(RM?1:.18);ry+=(cy-ry)*(RM?1:.18);ring.style.transform='translate3d('+rx+'px,'+ry+'px,0)'}
-  if(!document.hidden&&scrollY<hero.offsetHeight+innerHeight)drawHelm(t||0);
+  if(!document.hidden&&scrollY<VIEW.heroH+VIEW.stickH)drawHelm(t||0);
   if(!renderer||document.hidden)return;
-  var vh=innerHeight,hh=hero.offsetHeight,sy=scrollY;
+  var vh=VIEW.stickH,hh=VIEW.heroH,sy=scrollY;
   var o=1-clamp((sy-(hh-vh*1.1))/(vh*.7));
-  gl.style.opacity=o.toFixed(3);
+  gl.style.opacity=(o*GLK).toFixed(3);
   if(o<=.01)return;
   var range=hh-vh;state.p=RM?.12:(range>0?clamp(sy/range):0);
   var cdt=state.t?Math.min(100,Math.max(0,t-state.t)):16;state.t=t;state.sp+=(state.p-state.sp)*(RM?1:1-Math.exp(-cdt/196));
@@ -736,7 +751,7 @@ function loop(t){
   cam.rotation.z=Math.sin(s*6)*.04;
   cam.lookAt(smx*.6,-smy*.4,cam.position.z-10);
   if(!RM)planes.forEach(function(m){m.position.y=m.userData.y+Math.sin(t*.0006+m.userData.o)*.1});
-  planes.forEach(function(m){var dz=cam.position.z-m.position.z,o=clamp((dz-1.2)/2.2),tr=o<1;if(m.material.transparent!==tr){m.material.transparent=tr;m.material.depthWrite=!tr;m.material.needsUpdate=true}m.material.opacity=o;m.visible=dz>1.2});
+  planes.forEach(function(m){var dz=cam.position.z-m.position.z;m.material.opacity=clamp((dz-FADE[0])/FADE[1]);m.visible=dz>FADE[0]});
   renderer.render(scene,cam);
 }
 initGL();requestAnimationFrame(loop);
