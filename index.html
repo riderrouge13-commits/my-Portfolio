@@ -679,7 +679,7 @@ function initGL(){
     if(F[0]){tex=new THREE.Texture();(function(t,f){AVIF.then(function(){var im=new Image();im.decoding='async';im.onload=function(){t.image=im;t.needsUpdate=true};im.src=bestImg('work/'+f)})})(tex,F[0])}
     else{var c=document.createElement('canvas');var cw=ratio>=1?512:340;drawArt(c,cw,Math.round(cw/ratio),i*5+101,[0,2,4][i%3]);tex=new THREE.CanvasTexture(c)}
     if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
-    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h0),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h0),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     var a=i*2.4,rad=5.6+(i%3)*1.1;
     m.position.set(XO+Math.cos(a)*rad*XF,Math.sin(a)*rad*.62+(NARROW?1.2:0),-2-i*SPACING);
     m.rotation.set(m.position.y*.05,-m.position.x*.08,(rr()-.5)*.2);
@@ -707,9 +707,12 @@ helmL.forEach(function(l,i){
   l.addEventListener('pointerenter',function(e){if(e.pointerType!=='touch')on()});
   l.addEventListener('pointerleave',off);l.addEventListener('focus',on);l.addEventListener('blur',off);
 });
+var helmHS=null,helmT=0;
 function drawHelm(t){
   var vh=innerHeight,range=hero.offsetHeight-vh,hp=range>0?clamp(scrollY/range):0;
-  var rot=HW.intro+HW.off+(RM?0:hp*360+Math.sin(t*.0007)*1.6);
+  var dt=helmT?Math.min(100,Math.max(0,t-helmT)):16;helmT=t;
+  if(helmHS===null||RM)helmHS=hp;else helmHS+=(hp-helmHS)*(1-Math.exp(-dt/190));
+  var rot=HW.intro+HW.off+(RM?0:helmHS*360+Math.sin(t*.0007)*1.6);
   wheelG.setAttribute('transform','rotate('+rot.toFixed(2)+')');
   var hotSpoke=-1;if(HW.hot>=0){hotSpoke=((Math.round((SLOT[HW.hot]-rot)/60)%6)+6)%6}
   knobs.forEach(function(k,i){k.classList.toggle('on',i===hotSpoke)});
@@ -725,7 +728,7 @@ function loop(t){
   gl.style.opacity=o.toFixed(3);
   if(o<=.01)return;
   var range=hh-vh;state.p=RM?.12:(range>0?clamp(sy/range):0);
-  state.sp+=(state.p-state.sp)*(RM?1:.08);
+  var cdt=state.t?Math.min(100,Math.max(0,t-state.t)):16;state.t=t;state.sp+=(state.p-state.sp)*(RM?1:1-Math.exp(-cdt/196));
   var s=state.sp;smx+=(mx-smx)*.05;smy+=(my-smy)*.05;
   cam.position.z=8-s*(N*SPACING-6);
   cam.position.x=Math.sin(s*Math.PI*2)*1.1+smx*.9;
@@ -733,7 +736,7 @@ function loop(t){
   cam.rotation.z=Math.sin(s*6)*.04;
   cam.lookAt(smx*.6,-smy*.4,cam.position.z-10);
   if(!RM)planes.forEach(function(m){m.position.y=m.userData.y+Math.sin(t*.0006+m.userData.o)*.1});
-  planes.forEach(function(m){var dz=cam.position.z-m.position.z;m.material.opacity=clamp((dz-1.2)/2.2);m.visible=dz>1.2});
+  planes.forEach(function(m){var dz=cam.position.z-m.position.z,o=clamp((dz-1.2)/2.2),tr=o<1;if(m.material.transparent!==tr){m.material.transparent=tr;m.material.depthWrite=!tr;m.material.needsUpdate=true}m.material.opacity=o;m.visible=dz>1.2});
   renderer.render(scene,cam);
 }
 initGL();requestAnimationFrame(loop);
